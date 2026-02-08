@@ -1,0 +1,318 @@
+openapi: 3.1.0
+info:
+  title: Todo Server API
+  version: 1.0.0
+  description: |
+    A REST API for managing todos, built with Swift 6 and Hummingbird 2.
+    
+    This API supports two-tier authentication:
+    1. Basic Auth for obtaining a JWT token.
+    2. Bearer Authentication (JWT) for accessing protected resources.
+servers:
+  - url: http://localhost:8080
+    description: Local Development Server
+tags:
+  - name: User
+    description: User authentication operations
+  - name: Todos
+    description: Todo management operations
+paths:
+  /:
+    get:
+      summary: Health Check
+      description: Returns a simple version string indicating the server is running.
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Server is running
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "todo-server v1.0!"
+
+  /user:
+    post:
+      tags:
+        - User
+      summary: Login
+      description: Authenticates a user using Basic Auth and returns a JWT token.
+      operationId: login
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: The JWT bearer token to be used for subsequent requests.
+                    example: "eyJhbGciOiJIUzI1NiIsImtpZCI6ImF1dGgtand0In0..."
+                required:
+                  - token
+        '401':
+          description: Unauthorized - Invalid credentials
+
+  /auth:
+    get:
+      tags:
+        - User
+      summary: Verify Token
+      description: Verifies the validity of the provided JWT token.
+      operationId: verifyToken
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Token is valid
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Authenticated (username: admin)"
+        '401':
+          description: Unauthorized - Invalid or expired token
+
+  /todos:
+    get:
+      tags:
+        - Todos
+      summary: List Todos
+      description: |
+        Retrieves a list of todos for the authenticated user.
+        Supports cursor-based pagination when `start` or `limit` is provided.
+      operationId: listTodos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: start
+          in: query
+          description: The opaque pagination token for the next page of results.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: The maximum number of items to return (default: 10, range: 1-100).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: A specific page of todos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoPage'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+
+    post:
+      tags:
+        - Todos
+      summary: Create Todo
+      description: Creates a new todo for the authenticated user.
+      operationId: createTodo
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTodoRequest'
+      responses:
+        '201':
+          description: Todo created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+
+    delete:
+      tags:
+        - Todos
+      summary: Delete All Todos
+      description: Permanently deletes all todos for the authenticated user.
+      operationId: deleteAllTodos
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All todos deleted
+        '400':
+          description: Bad Request (Deletion failed)
+        '401':
+          description: Unauthorized
+
+  /todos/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: The UUID of the todo
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - Todos
+      summary: Get Todo
+      description: Retrieves a single todo by its UUID.
+      operationId: getTodo
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Todo found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '404':
+          description: Todo not found
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+
+    patch:
+      tags:
+        - Todos
+      summary: Update Todo
+      description: Updates specific fields of a todo.
+      operationId: updateTodo
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTodoRequest'
+      responses:
+        '200':
+          description: Todo updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+
+    delete:
+      tags:
+        - Todos
+      summary: Delete Todo
+      description: Deletes a specific todo by its UUID.
+      operationId: deleteTodo
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Todo deleted successfully
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Todo:
+      type: object
+      required:
+        - id
+        - title
+        - url
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the todo.
+        title:
+          type: string
+          description: The user-visible title or description of the task.
+        order:
+          type: integer
+          nullable: true
+          description: A sorting hint for displaying todos.
+        url:
+          type: string
+          format: uri
+          description: Full URL path for accessing this todo.
+        completed:
+          type: boolean
+          nullable: true
+          description: Completion status of the todo.
+    
+    TodoPage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Todo'
+        nextPageToken:
+          type: string
+          nullable: true
+          description: Token to retrieve the next page of results.
+      example:
+        items:
+          - id: 550e8400-e29b-41d4-a716-446655440000
+            title: Buy groceries
+            order: 1
+            url: http://localhost:8080/todos/550e8400-e29b-41d4-a716-446655440000
+            completed: false
+        nextPageToken: null
+
+    CreateTodoRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          description: The human-readable task description.
+        order:
+          type: integer
+          nullable: true
+          description: A sorting hint.
+
+    UpdateTodoRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          nullable: true
+          description: New title.
+        order:
+          type: integer
+          nullable: true
+          description: New order value.
+        completed:
+          type: boolean
+          nullable: true
+          description: New completion status.

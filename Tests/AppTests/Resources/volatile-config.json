@@ -1,0 +1,15 @@
+{
+    "security": {
+        "jwtSecretKey": "my-secret-key!"
+    },
+    "repository": {
+        "type": "volatile"
+    },
+    "users": [
+        {
+            "id": "4B7816A4-ADD6-4C62-B71B-24E81A35D0D6",
+            "name": "admin",
+            "password": "my-secret-password!"
+        }
+    ]
+}
