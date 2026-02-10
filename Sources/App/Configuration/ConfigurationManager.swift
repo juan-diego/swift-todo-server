@@ -1,3 +1,4 @@
+import Foundation
 import Logging
 import Hummingbird
 
@@ -83,6 +84,26 @@ struct ConfigurationManager {
                 dict[user.name] = try await User(id: user.id, name: user.name, password: user.password)
             }
             return dict
+        }
+    }
+    
+    /// The allowed CORS origin, if configured and valid.
+    ///
+    /// This validates the configured origin as a URL and logs a warning if it is invalid.
+    /// Returning `nil` disables CORS middleware registration.
+    ///
+    /// - Returns: The allowed origin as a `URL` or `nil` if missing or invalid.
+    var corsAllowedOrigin: URL? {
+        get async {
+            guard let allowedOrigin = appConfiguration.security.cors?.allowOrigin else {
+                return nil
+            }
+            if let url = URL(string: allowedOrigin) {
+                return url
+            } else {
+                await GlobalConfiguration.logger.warning("CORS allowed origin is not a valid URL: \(allowedOrigin)")
+                return nil
+            }
         }
     }
 }

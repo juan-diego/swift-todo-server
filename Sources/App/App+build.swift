@@ -107,6 +107,7 @@ func buildApplication(_ arguments: some AppArguments) async throws -> some Appli
 ///
 /// ## Middleware Registration
 ///
+/// - Global CORS middleware allows requests from the configured origin (if set)
 /// - Global logging middleware logs all incoming requests at INFO level
 /// - User routes use `BasicAuthenticator` to validate username/password credentials
 /// - Todo and auth routes use ``JWTAuthenticator`` to validate Bearer tokens
@@ -120,10 +121,21 @@ func buildApplication(_ arguments: some AppArguments) async throws -> some Appli
 func buildRouter(_ configuration: ConfigurationManager) async throws -> Router<AppRequestContext> {
     let router = Router(context: AppRequestContext.self)
     
-    // Add global middleware
+    // Add global middlewares
+    // Log configuration for all incoming requests
+    let logLevel = await GlobalConfiguration.store.logLevel
     router.addMiddleware {
-        // Log all incoming requests at INFO level
-        LogRequestsMiddleware(.info)
+        LogRequestsMiddleware(logLevel)
+    }
+    // Optional CORS configuration
+    if let corsAllowOrigin = await configuration.corsAllowedOrigin {
+        await GlobalConfiguration.logger.info("⚙️ Enabling CORS for origin: \(corsAllowOrigin.absoluteString).")
+        router.addMiddleware {
+            CORSMiddleware(
+                allowOrigin: .custom(corsAllowOrigin.absoluteString),
+                allowMethods: [.get, .post, .put, .patch, .delete, .head, .options]
+            )
+        }
     }
     
     // Root endpoint for service health checks

@@ -1,4 +1,5 @@
 import Foundation
+import Hummingbird
 import Logging
 
 /// Top-level application configuration loaded from `config.json`.
@@ -27,6 +28,19 @@ struct HummingbirdConfiguration: Codable, Sendable {
 struct SecurityConfiguration: Codable, Sendable {
     /// Secret key used to sign and verify JWTs.
     let jwtSecretKey: String
+    /// Optional CORS configuration used by the HTTP server.
+    let cors: CorsConfiguration?
+}
+
+/// CORS configuration values.
+///
+/// This configuration is applied globally when building the router to control
+/// which browser origins can access the API.
+struct CorsConfiguration: Codable, Sendable {
+    /// The allowed origin to echo back in `Access-Control-Allow-Origin`.
+    ///
+    /// This should be a fully qualified origin, for example `http://localhost:4200`.
+    let allowOrigin: String
 }
 
 /// Configuration for selecting and configuring the repository backend.

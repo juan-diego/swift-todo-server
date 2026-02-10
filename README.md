@@ -248,7 +248,10 @@ The configuration file is JSON and matches these top-level keys.
 {
   "logLevel": "info",
   "security": {
-    "jwtSecretKey": "<secret>"
+    "jwtSecretKey": "<secret>",
+    "cors": {
+      "allowOrigin": "http://localhost:4200"
+    }
   },
   "repository": {
     "type": "volatile",
@@ -273,3 +276,4 @@ The configuration file is JSON and matches these top-level keys.
 - `firestore` is required for `persistent` and `emulated`.
 - `tokenRetriever` accepts `MetadataServer`, `AppDefaultCredentials`, or `None`.
 - `users.password` is hashed at startup and should not be logged.
+- `security.cors.allowOrigin` is optional; when set, the server enables CORS and echoes this origin in `Access-Control-Allow-Origin`.
