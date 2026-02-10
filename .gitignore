@@ -66,3 +66,6 @@ fastlane/test_output
 
 # Visual Studio code
 .vscode
+
+# Xcode
+.swiftpm
