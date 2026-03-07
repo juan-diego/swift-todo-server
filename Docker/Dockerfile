@@ -74,7 +74,7 @@ WORKDIR /app
 COPY --from=build --chown=hummingbird:hummingbird /staging /app
 
 # Copy default configuration file
-COPY --chown=hummingbird:hummingbird Resources/volatile-config.json /app/config.json
+COPY --chown=hummingbird:hummingbird Docker/volatile-config.json /app/config.json
 
 # Provide configuration needed by the built-in crash reporter and some sensible default behaviors.
 ENV SWIFT_BACKTRACE=enable=yes,sanitize=yes,threads=all,images=all,interactive=no,swift-backtrace=./swift-backtrace-static
